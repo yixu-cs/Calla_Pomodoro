@@ -226,12 +226,27 @@ class PersonalizedTimer:
 
         # 定义三列的数据源
         columns = [
-            {"title": "🦊", "file": "qsl_rest.json", "default": ["包里给你装了点心和零食，趁着休息去吃一点吧。",
-            "要是有尾巴抱就好了？哼，可惜现在没有，就先玩玩那两个毛绒球吧。",
-            "闭上眼睛一样可以和我聊天，还可以缓解眼疲劳。",
-            "在我脸上戳来戳去可以解压？也就只有你能想得出这种方式。"], "color": "#5D4037"},
-            {"title": "📜", "file": "tagore_list.json", "default": ["生如夏花之绚烂。", "天空没有翅膀的痕迹，而我已飞过。"], "color": "#00695C"},
-            {"title": "🧘", "file": "rest_activities.json", "default": ["👀 滴个眼药水吧", "🍵 泡杯热茶"], "color": "#EF6C00"}
+            {
+                "title": "🦊", 
+                "file": "qsl_rest.json", 
+                "count": 1,
+                "default": ["包里给你装了点心和零食。", "要是有尾巴抱就好了？"], 
+                "color": "#5D4037"
+            },
+            {
+                "title": "📜", 
+                "file": "tagore_list.json", 
+                "count": 1,
+                "default": ["生如夏花之绚烂。", "天空没有翅膀的痕迹。"], 
+                "color": "#00695C"
+            },
+            {
+                "title": "🧘", 
+                "file": "rest_activities.json", 
+                "count": 3, 
+                "default": ["👀 滴个眼药水吧", "🍵 泡杯热茶", "🪜 爬楼梯动一动"], 
+                "color": "#EF6C00"
+            }
         ]
 
         for col_data in columns:
@@ -241,15 +256,23 @@ class PersonalizedTimer:
             # 标题
             tk.Label(frame, text=col_data["title"], bg="#E0E0E0", font=("微软雅黑", 12, "bold")).pack(fill="x", ipady=5)
             
-            # 内容
-            text_content = self.get_random_line(col_data["file"], col_data["default"])
-            # 处理可能的换行符，让它在标签里正确显示
+            if col_data["count"] > 1:
+                # 获取列表
+                items = []
+                for i in range(col_data["count"]):
+                    items.append(self.get_random_line(col_data["file"], col_data["default"]))
+                # 拼接成字符串，中间用换行符分隔
+                # 这里加了 "• " 让它看起来像个列表
+                text_content = "\n\n".join([f"• {item}" for item in items])
+            else:
+                text_content = self.get_random_line(col_data["file"], col_data["default"])
+            
+            # 处理可能的换行符
             text_content = text_content.replace("\\n", "\n") 
             
             lbl = tk.Label(frame, text=text_content, bg="white", fg=col_data["color"], 
-                           font=("微软雅黑", 11), wraplength=180, justify="center")
+                           font=("微软雅黑", 11), wraplength=180, justify="left" if col_data["count"] > 1 else "center")
             lbl.pack(expand=True, fill="both", padx=5)
-
 
     # --- 计时器逻辑 ---
     def start_timer(self):
