@@ -3,3 +3,6 @@ dist
 calla_pomodoro.spec
 calla_pomodoro.zip
 .vscode
+qsl_*
+tagore_list.json
+rest_activities.json

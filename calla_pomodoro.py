@@ -11,7 +11,7 @@ class PersonalizedTimer:
     def __init__(self, root):
         self.root = root
         self.root.title("Calla番茄钟")
-        # 稍微调大一点窗口以容纳三列文字
+        # window size
         self.root.geometry("700x500")
             
         try:
@@ -26,7 +26,16 @@ class PersonalizedTimer:
         self.remaining_seconds = 0
         
         self.last_focus_min = 45 
-        self.last_break_min = 5 
+        self.last_break_min = 10 
+        
+        # load data
+        self.data = None
+        if os.path.exists("data.json"):
+            try:
+                with open("data.json", "r", encoding="utf-8") as f:
+                    self.data = json.load(f)
+            except Exception as e:
+                pass    
         
         # 记录专注历史：[{'duration': 分钟, 'rating': 1-5}]
         self.focus_history = []
@@ -36,19 +45,13 @@ class PersonalizedTimer:
         self.setup_initial_rounds_ui()
 
     # --- 辅助功能：读取文件 ---
-    def get_random_line(self, filename, default_list):
+    def get_random_line(self, pattern, default_list):
         """尝试从JSON文件中读取列表，如果文件不存在或解析失败则使用默认列表"""
-        if os.path.exists(filename):
-            try:
-                with open(filename, "r", encoding="utf-8") as f:
-                    # 使用 json.load 直接将文件内容转为 Python 列表
-                    data = json.load(f)
-                    
-                    # 确保读取到的是一个列表，并且不是空的
-                    if isinstance(data, list) and data:
-                        return random.choice(data)
-            except Exception as e:
-                print(f"读取 {filename} 出错: {e}")
+        data = None
+        if self.data is not None and pattern in self.data:
+            data = self.data[pattern]
+            if isinstance(data, list) and data:
+                return random.choice(data)
         
         # 如果文件不存在、JSON格式错误或列表为空，使用默认列表
         return random.choice(default_list)
@@ -108,8 +111,7 @@ class PersonalizedTimer:
         quote_fg = "#757575"
         
         if self.is_focusing:
-            # 从 qsl_begin.json 读取
-            tip_text =  "🦊" + self.get_random_line("qsl_begin.json", [
+            tip_text =  "🦊" + self.get_random_line("begin_focus", [
                 "新一轮的专注开始了。心无旁骛地投入就好。",
                 "专注的时间到了。先把任务完成再想奖励的事吧"
             ])
@@ -148,10 +150,8 @@ class PersonalizedTimer:
         tk.Label(self.root, text=report_text, font=("微软雅黑", 14), justify="center").pack(pady=20)
         tk.Label(self.root, text="(有效时长 = 时长 × 专注度权重)", fg="#999").pack()
         
-        # 从 qsl_complete.json 读取结语
-        # default_list 是为了防止文件没创建时报错
-        end_quote = "🦊" + self.get_random_line("qsl_complete.json", [
-            "今天……确实做得不错。",
+        end_quote = "🦊" + self.get_random_line("complete", [
+            "今天确实做得不错。好了，去休息吧。嘴角都要飞到天上去了。",
             "任务完成了，那些压力也该像尘埃一样拍掉了。去洗个澡，好梦。"
         ])
 
@@ -210,8 +210,7 @@ class PersonalizedTimer:
                   bg="#FFCCBC", fg="#D84315", relief="groove").pack(pady=10)
 
     def harass_fox(self):
-        # 从 qsl_focus.json 随机读取
-        msg = self.get_random_line("qsl_focus.json", [
+        msg = self.get_random_line("during_focus", [
             "我是说过抬头就能看到我，但也不用抬这么多次。",
             "我怎么不知道，你把要做的事情写到了我的脸上？",
             "再被我抓到一次走神，今天的点心就没有了。"
@@ -228,21 +227,21 @@ class PersonalizedTimer:
         columns = [
             {
                 "title": "🦊", 
-                "file": "qsl_rest.json", 
+                "pattern": "qsl_quote", 
                 "count": 1,
                 "default": ["包里给你装了点心和零食。", "要是有尾巴抱就好了？"], 
                 "color": "#5D4037"
             },
             {
                 "title": "📜", 
-                "file": "tagore_list.json", 
+                "pattern": "tagore_list", 
                 "count": 1,
                 "default": ["生如夏花之绚烂。", "天空没有翅膀的痕迹。"], 
                 "color": "#00695C"
             },
             {
                 "title": "🧘", 
-                "file": "rest_activities.json", 
+                "pattern": "rest_activities", 
                 "count": 3, 
                 "default": ["👀 滴个眼药水吧", "🍵 泡杯热茶", "🪜 爬楼梯动一动"], 
                 "color": "#EF6C00"
@@ -260,12 +259,12 @@ class PersonalizedTimer:
                 # 获取列表
                 items = []
                 for i in range(col_data["count"]):
-                    items.append(self.get_random_line(col_data["file"], col_data["default"]))
+                    items.append(self.get_random_line(col_data["pattern"], col_data["default"]))
                 # 拼接成字符串，中间用换行符分隔
                 # 这里加了 "• " 让它看起来像个列表
                 text_content = "\n\n".join([f"• {item}" for item in items])
             else:
-                text_content = self.get_random_line(col_data["file"], col_data["default"])
+                text_content = self.get_random_line(col_data["pattern"], col_data["default"])
             
             # 处理可能的换行符
             text_content = text_content.replace("\\n", "\n") 
@@ -365,13 +364,16 @@ class PersonalizedTimer:
         # 记录完后进入休息状态
         self.is_focusing = False
         self.setup_config_ui()
-        self.show_custom_notification("☕ 评分已记录，现在去休息一下吧。")
+        if rating >= 4: # qsl gives encouragement based on rating
+            pattern = "high_quality"
+        else:
+            pattern = "low_quality"
+        self.show_custom_notification(pattern)
 
-    def show_custom_notification(self, msg):
+    def show_custom_notification(self, pattern):
         popup = tk.Toplevel(self.root)
-        popup.title("提醒")
+        popup.title("🦊")
         popup.attributes("-topmost", True)
-        # popup.focus_force() # 有些系统可能不喜欢这行，可以注释掉
         
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
@@ -383,8 +385,16 @@ class PersonalizedTimer:
         bg_color = "#e8f5e9" if not self.is_focusing else "#fff3e0"
         popup.configure(bg=bg_color)
         
+        msg = self.get_random_line(pattern, ["包里给你装了点心和零食，可以去吃一点。",
+            "要是有尾巴抱就好了？可惜现在没有，就先玩玩那两个毛绒球吧。",
+            "闭上眼睛一样可以和我聊天，还可以缓解眼疲劳。",
+            "在我脸上戳来戳去可以解压？只有你才能想得出来这种放松方式。",
+            "既然累了，就靠在我肩膀上休息一会儿。",
+            "怎么一副魂不守舍的样子？过来，我帮你揉揉太阳穴。",
+            "我看你不是在休息，是在练习怎么盯着我发呆。闭眼，休息。"])
+        
         tk.Label(popup, text=msg, wraplength=280, font=("微软雅黑", 12), bg=bg_color, justify="center").pack(expand=True, pady=10)
-        tk.Button(popup, text="知道了", command=popup.destroy, bg="white", relief="groove").pack(pady=10)
+        tk.Button(popup, text="🦚：好的狐狐", command=popup.destroy, bg="white", relief="groove").pack(pady=10)
 
     def toggle_pause(self):
         self.is_running = not self.is_running
