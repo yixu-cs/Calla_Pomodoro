@@ -39,6 +39,8 @@ class PersonalizedTimer:
         
         # 记录专注历史：[{'duration': 分钟, 'rating': 1-5}]
         self.focus_history = []
+        # harass times
+        self.harass_count = 0
         
         self.base_font = tkfont.Font(family="微软雅黑", size=12)
         
@@ -59,8 +61,8 @@ class PersonalizedTimer:
     # --- 界面 1：初始设置 ---
     def setup_initial_rounds_ui(self):
         self.clear_window()
-        tk.Label(self.root, text="🍅 个性化番茄钟", font=("微软雅黑", 24, "bold"), fg="#FF7043").pack(pady=40)
-        tk.Label(self.root, text="某只笨鸟，今天计划进行几轮专注？", font=("微软雅黑", 14)).pack(pady=10)
+        tk.Label(self.root, text="🍅\n📬👀📓🦜\n🌀🦊👗🛀", font=("微软雅黑", 24, "bold"), fg="#FF7043").pack(pady=40)
+        tk.Label(self.root, text="叽叽喳喳的笨鸟难得耐下心来做事，我会好好监督的。\n说吧，要专注几轮？", font=("微软雅黑", 14)).pack(pady=10)
         
         input_frame = tk.Frame(self.root)
         input_frame.pack(pady=10)
@@ -86,7 +88,7 @@ class PersonalizedTimer:
     def setup_config_ui(self):
         self.clear_window()
         
-        # === 功能点 2：一天结束后的统计 ===
+        # === 一天结束后的统计 ===
         if self.current_round > self.total_rounds:
              self.show_daily_report()
              return
@@ -95,7 +97,7 @@ class PersonalizedTimer:
         mode_text = f"第 {self.current_round} / {self.total_rounds} 轮"
         tk.Label(self.root, text=mode_text, font=("微软雅黑", 16, "bold"), fg="#555").pack(pady=20)
         
-        state_text = "💪 准备专注" if self.is_focusing else "☕ 准备休息"
+        state_text = "💪 准备好了就开始吧" if self.is_focusing else "☕ 去休息一会吧"
         color = "#e64a19" if self.is_focusing else "#00897b"
         tk.Label(self.root, text=state_text, font=("微软雅黑", 20, "bold"), fg=color).pack(pady=5)
 
@@ -106,17 +108,20 @@ class PersonalizedTimer:
         entry = tk.Entry(self.root, textvariable=self.time_var, width=8, font=("Arial", 16), justify='center')
         entry.pack(pady=5)
         
-        # === 功能点 4：休息结束/专注开始前的语录 ===
+        # === 休息结束/专注开始前的语录 ===
         tip_text = ""
         quote_fg = "#757575"
         
         if self.is_focusing:
-            tip_text =  "🦊" + self.get_random_line("begin_focus", [
+            tip_text =  "🦊：" + self.get_random_line("begin_focus", [
                 "新一轮的专注开始了。心无旁骛地投入就好。",
                 "专注的时间到了。先把任务完成再想奖励的事吧"
             ])
         else:
-            tip_text = "休息一下，给大脑充充电"
+            tip_text =  "🦊：" + self.get_random_line("begin_rest", [
+                "包里给你装了点心和零食，可以去吃一点。",
+                "要是有尾巴抱就好了？可惜现在没有，就先玩玩那两个毛绒球吧。"
+            ])
         
         tk.Label(self.root, text=tip_text, fg=quote_fg, font=("微软雅黑", 12, "italic"), wraplength=600).pack(pady=20)
 
@@ -126,7 +131,7 @@ class PersonalizedTimer:
     # --- 统计报告界面 ---
     def show_daily_report(self):
         self.clear_window()
-        tk.Label(self.root, text="🎉 今日总结", font=("微软雅黑", 30, "bold"), fg="#FF7043").pack(pady=30)
+        tk.Label(self.root, text="🎉 📓🦜总结", font=("微软雅黑", 30, "bold"), fg="#FF7043").pack(pady=30)
         
         total_time = 0
         effective_time = 0
@@ -150,7 +155,7 @@ class PersonalizedTimer:
         tk.Label(self.root, text=report_text, font=("微软雅黑", 14), justify="center").pack(pady=20)
         tk.Label(self.root, text="(有效时长 = 时长 × 专注度权重)", fg="#999").pack()
         
-        end_quote = "🦊" + self.get_random_line("complete", [
+        end_quote = "🦊：" + self.get_random_line("complete", [
             "今天确实做得不错。好了，去休息吧。嘴角都要飞到天上去了。",
             "任务完成了，那些压力也该像尘埃一样拍掉了。去洗个澡，好梦。"
         ])
@@ -162,7 +167,7 @@ class PersonalizedTimer:
         
         # 3. 核心：展示完后由你决定是否退出
         tk.Button(self.root, text="明天见 (退出)", command=self.root.quit, bg="#E0E0E0", width=15).pack(pady=40)
-        tk.Button(self.root, text="重新开始", command=self.reset_app, relief="flat", fg="blue").pack()
+        tk.Button(self.root, text="开始下一轮专注", command=self.reset_app, relief="flat", fg="blue").pack()
 
     # --- 界面 3：计时中 ---
     def setup_timer_ui(self):
@@ -200,9 +205,9 @@ class PersonalizedTimer:
 
     # --- 专注模式布局 ---
     def setup_focus_layout(self):
-        tk.Label(self.root, text="🔥 专注进行中...", font=("微软雅黑", 14), fg="#e64a19").pack(pady=20)
+        tk.Label(self.root, text="🌳 专注进行中...", font=("微软雅黑", 14), fg="#e64a19").pack(pady=20)
         
-        # === 功能点 3：骚扰小狐狸 ===
+        # === 骚扰小狐狸 ===
         self.fox_feedback_label = tk.Label(self.root, text="", font=("楷体", 12), fg="#5D4037", wraplength=500)
         self.fox_feedback_label.pack(pady=10)
         
@@ -210,7 +215,12 @@ class PersonalizedTimer:
                   bg="#FFCCBC", fg="#D84315", relief="groove").pack(pady=10)
 
     def harass_fox(self):
-        msg = self.get_random_line("during_focus", [
+        self.harass_count += 1
+        if self.harass_count <= 5:
+            pattern = "during_focus_reminder"
+        else:
+            pattern = "during_focus_encouragement"
+        msg = self.get_random_line(pattern, [
             "我是说过抬头就能看到我，但也不用抬这么多次。",
             "我怎么不知道，你把要做的事情写到了我的脸上？",
             "再被我抓到一次走神，今天的点心就没有了。"
@@ -219,7 +229,7 @@ class PersonalizedTimer:
 
     # --- 休息模式布局 ---
     def setup_rest_layout(self):
-        # === 功能点 1：三列布局展示语录 ===
+        # === 三列布局展示语录 ===
         content_frame = tk.Frame(self.root, bg="#f9fbe7")
         content_frame.pack(expand=True, fill="both", padx=20, pady=10)
 
@@ -228,8 +238,8 @@ class PersonalizedTimer:
             {
                 "title": "🦊", 
                 "pattern": "qsl_quote", 
-                "count": 1,
-                "default": ["包里给你装了点心和零食。", "要是有尾巴抱就好了？"], 
+                "count": 2,
+                "default": ["你是我藏在密林的春天。", "窗户没关好，飞进来一只笨鸟。"], 
                 "color": "#5D4037"
             },
             {
@@ -331,20 +341,22 @@ class PersonalizedTimer:
 
         # === 核心逻辑分流 ===
         if self.is_focusing:
-            # 专注结束 -> 进入评分流程 (功能点 2)
+            # 专注结束 -> 进入评分流程
             self.show_rating_ui()
         else:
             # 休息结束 -> 准备下一轮
-            self.show_custom_notification("💪 休息结束，准备开始专注吧！")
+            # seems useless
+            # self.setup_config_ui()
+            # self.show_custom_notification("begin_focus")
             self.is_focusing = True
             self.current_round += 1
             self.setup_config_ui()
 
-    # --- 功能点 2：专注评分界面 ---
+    # --- 专注评分界面 ---
     def show_rating_ui(self):
         self.clear_window()
-        tk.Label(self.root, text="🍅 本轮专注结束", font=("微软雅黑", 20, "bold"), fg="#e64a19").pack(pady=30)
-        tk.Label(self.root, text="请评价刚才的专注程度 (1-5)", font=("微软雅黑", 14)).pack(pady=10)
+        tk.Label(self.root, text="🍅 专注结束了，去喝点茶，吃点点心吧", font=("微软雅黑", 20, "bold"), fg="#e64a19").pack(pady=30)
+        tk.Label(self.root, text="你觉得自己刚刚做得怎么样 (1-5)", font=("微软雅黑", 14)).pack(pady=10)
         tk.Label(self.root, text="1=心不在焉 ... 5=极度专注", font=("微软雅黑", 10), fg="#888").pack(pady=5)
         
         btn_frame = tk.Frame(self.root)
@@ -363,7 +375,9 @@ class PersonalizedTimer:
         
         # 记录完后进入休息状态
         self.is_focusing = False
+        self.harass_count = 0
         self.setup_config_ui()
+        pattern = None
         if rating >= 4: # qsl gives encouragement based on rating
             pattern = "high_quality"
         else:
@@ -384,17 +398,15 @@ class PersonalizedTimer:
         
         bg_color = "#e8f5e9" if not self.is_focusing else "#fff3e0"
         popup.configure(bg=bg_color)
-        
-        msg = self.get_random_line(pattern, ["包里给你装了点心和零食，可以去吃一点。",
-            "要是有尾巴抱就好了？可惜现在没有，就先玩玩那两个毛绒球吧。",
-            "闭上眼睛一样可以和我聊天，还可以缓解眼疲劳。",
-            "在我脸上戳来戳去可以解压？只有你才能想得出来这种放松方式。",
-            "既然累了，就靠在我肩膀上休息一会儿。",
-            "怎么一副魂不守舍的样子？过来，我帮你揉揉太阳穴。",
-            "我看你不是在休息，是在练习怎么盯着我发呆。闭眼，休息。"])
+        msg = self.get_random_line(pattern, 
+            ["难得没有偷懒，表现得还不错。", 
+            "我看得出来，你是真的在努力。", 
+            "允许自己有笨拙的时候。", 
+            "你这点小小的失误，没什么大不了的。", 
+            "你不是一台只允许盈利的机器。"])
         
         tk.Label(popup, text=msg, wraplength=280, font=("微软雅黑", 12), bg=bg_color, justify="center").pack(expand=True, pady=10)
-        tk.Button(popup, text="🦚：好的狐狐", command=popup.destroy, bg="white", relief="groove").pack(pady=10)
+        tk.Button(popup, text="🦜：好的狐狐", command=popup.destroy, bg="white", relief="groove").pack(pady=10)
 
     def toggle_pause(self):
         self.is_running = not self.is_running
