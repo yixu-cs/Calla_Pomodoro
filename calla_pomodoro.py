@@ -12,7 +12,7 @@ class PersonalizedTimer:
         self.root = root
         self.root.title("Calla番茄钟")
         # window size
-        self.root.geometry("700x500")
+        self.root.geometry("700x550")
             
         try:
             self.root.iconbitmap("fox.ico") 
@@ -47,16 +47,16 @@ class PersonalizedTimer:
         self.setup_initial_rounds_ui()
 
     # --- 辅助功能：读取文件 ---
-    def get_random_line(self, pattern, default_list):
+    def get_random_line(self, pattern, default_list, count=1):
         """尝试从JSON文件中读取列表，如果文件不存在或解析失败则使用默认列表"""
         data = None
         if self.data is not None and pattern in self.data:
             data = self.data[pattern]
             if isinstance(data, list) and data:
-                return random.choice(data)
+                return random.sample(data, count)
         
         # 如果文件不存在、JSON格式错误或列表为空，使用默认列表
-        return random.choice(default_list)
+        return random.sample(default_list, count)
 
     # --- 界面 1：初始设置 ---
     def setup_initial_rounds_ui(self):
@@ -76,6 +76,7 @@ class PersonalizedTimer:
     def confirm_rounds(self):
         try:
             r = self.rounds_var.get()
+            print(r)
             if r > 0:
                 self.total_rounds = r
                 self.setup_config_ui()
@@ -116,12 +117,12 @@ class PersonalizedTimer:
             tip_text =  "🦊：" + self.get_random_line("begin_focus", [
                 "新一轮的专注开始了。心无旁骛地投入就好。",
                 "专注的时间到了。先把任务完成再想奖励的事吧"
-            ])
+            ])[0]
         else:
             tip_text =  "🦊：" + self.get_random_line("begin_rest", [
                 "包里给你装了点心和零食，可以去吃一点。",
                 "要是有尾巴抱就好了？可惜现在没有，就先玩玩那两个毛绒球吧。"
-            ])
+            ])[0]
         
         tk.Label(self.root, text=tip_text, fg=quote_fg, font=("微软雅黑", 12, "italic"), wraplength=600).pack(pady=20)
 
@@ -158,7 +159,7 @@ class PersonalizedTimer:
         end_quote = "🦊：" + self.get_random_line("complete", [
             "今天确实做得不错。好了，去休息吧。嘴角都要飞到天上去了。",
             "任务完成了，那些压力也该像尘埃一样拍掉了。去洗个澡，好梦。"
-        ])
+        ])[0]
 
         # 展示齐司礼的夸奖
         # 使用 wraplength=500 防止句子太长超出屏幕
@@ -224,7 +225,7 @@ class PersonalizedTimer:
             "我是说过抬头就能看到我，但也不用抬这么多次。",
             "我怎么不知道，你把要做的事情写到了我的脸上？",
             "再被我抓到一次走神，今天的点心就没有了。"
-        ])
+        ])[0]
         self.fox_feedback_label.config(text=f"🦊：{msg}")
 
     # --- 休息模式布局 ---
@@ -267,14 +268,12 @@ class PersonalizedTimer:
             
             if col_data["count"] > 1:
                 # 获取列表
-                items = []
-                for i in range(col_data["count"]):
-                    items.append(self.get_random_line(col_data["pattern"], col_data["default"]))
+                items = self.get_random_line(col_data["pattern"], col_data["default"], col_data["count"])
                 # 拼接成字符串，中间用换行符分隔
                 # 这里加了 "• " 让它看起来像个列表
                 text_content = "\n\n".join([f"• {item}" for item in items])
             else:
-                text_content = self.get_random_line(col_data["pattern"], col_data["default"])
+                text_content = self.get_random_line(col_data["pattern"], col_data["default"])[0]
             
             # 处理可能的换行符
             text_content = text_content.replace("\\n", "\n") 
@@ -403,7 +402,7 @@ class PersonalizedTimer:
             "我看得出来，你是真的在努力。", 
             "允许自己有笨拙的时候。", 
             "你这点小小的失误，没什么大不了的。", 
-            "你不是一台只允许盈利的机器。"])
+            "你不是一台只允许盈利的机器。"])[0]
         
         tk.Label(popup, text=msg, wraplength=280, font=("微软雅黑", 12), bg=bg_color, justify="center").pack(expand=True, pady=10)
         tk.Button(popup, text="🦜：好的狐狐", command=popup.destroy, bg="white", relief="groove").pack(pady=10)
