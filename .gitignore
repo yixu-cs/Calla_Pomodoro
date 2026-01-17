@@ -1,9 +1,10 @@
 build
 dist
-calla_pomodoro.spec
+*.spec
 calla_pomodoro.zip
 .vscode
 qsl_*
 tagore_list.json
 rest_activities.json
 misc
+.DS_Store
